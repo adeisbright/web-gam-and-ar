@@ -17,7 +17,75 @@ const comments = [
     }
 ]
 
-  
+const addData = (db , storeName , data) => {
+
+    const transaction = db.transaction([storeName] , "readwrite") 
+    const store = transaction.objectStore(storeName)
+    const request = store.add(data)  
+
+    request.onsuccess = event => console.log(request.result)
+
+}
+
+const getData = (db , storeName ,  key) => {
+    const transaction = db.transaction([storeName] , "readonly") 
+    const store = transaction.objectStore(storeName)
+    const request = store.get(key)  
+
+    request.onsuccess = event => console.log(request.result)
+    request.onerror = event => console.log("There was an error")
+}
+
+const removeData = (db , storeName ,  key) => {
+    const request = db
+    .transaction([storeName] , "readwrite") 
+    .objectStore(storeName)
+    .delete(key)  
+
+    request.onsuccess = event => console.log("It is gone")
+    request.onerror = event => console.log("There was an error")
+}
+
+const updateData = (db , storeName ,  key , name) => {
+    const objectStore = db
+    .transaction([storeName] , "readwrite") 
+    .objectStore(storeName)
+
+    const request = objectStore.get(key)  
+
+    request.onsuccess = event => {
+        const data = event.target.result;
+
+        data.age = 42 
+
+        const requestUpdate = objectStore.put(data)
+
+        requestUpdate.onsuccess = event => console.log("Updated")
+    }
+}
+
+const getAll = (db , storeName) => {
+    const objectStore = db
+    .transaction([storeName] , "readwrite") 
+    .objectStore(storeName)
+
+    objectStore.getAll().onsuccess = (event) => {
+        const result = event.target.result 
+
+        console.log(`Got all customers: ${result.length}`);
+        for (let n of result){
+            console.log(n)
+        }
+    };
+}
+
+const searchByIndex = (db , indexName , key) => {
+    const index = db.index(indexName)
+    index.get(key).onsuccess = event => {
+        console.log(event.target.result)
+    }
+}
+
 request.onerror = event => {
     console.log(`Database Error: ${event.target.errorCode}`)
 }
@@ -30,6 +98,25 @@ request.onerror = event => {
 
 request.onsuccess = event => {
     db = event.target.result 
+    
+    //Get an item 
+    const storeName = "customers" 
+    const keyToDelete = "123456"
+    const keyToUpdate = "12345"
+
+    getData(db , storeName, "1234567")
+    removeData(db , storeName , keyToDelete)
+
+    const newData = {
+        name : "Donald Knuth"
+    }
+
+    //addData(db , "customers" , newData) 
+
+    updateData(db,storeName,keyToUpdate,newData)
+    //getAll(db,storeName) 
+    searchByIndex(db ,  "email" , "bill@company.com")
+    
 }
 
 request.onupgradeneeded = event => {
@@ -49,5 +136,7 @@ request.onupgradeneeded = event => {
 
     comments.map(comment => commentStore.add(comment)) 
 
-    
+
 }
+
+request.onblocked = event => alert("Please, close all other tabs running this application")
